@@ -7,11 +7,23 @@
   <body>
     <h2 align="center"> Add a resource </h2>
     <form action="/addResource" method="post">
-    <div>
-        <label for="resourceName">Resource Name:</label>
-        <input type="text" required id="resourceName"  />
-    </div>
-        <input type="submit">
+      <p>
+        <label for="resourceName">Resource Name</label>
+        <input type="text" required name="resourceName"  />
+      </p>
+      <p>
+        <label for="startTime">Start Time(HH:MM) </label>
+        <input type="text" required name="startTime" />
+      </p>
+      <p>
+        <label for="endTime">End Time(HH:MM) </label>
+        <input type="text" required name="endTime" />
+      </p>
+      <p>
+        <label for="tags">Tags </label>
+        <input type="text" required name="tags" placeholder="abc, xyz"/>
+      </p>
+      <input type="submit">
     </form>
   </body>
 </html>

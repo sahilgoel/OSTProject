@@ -7,6 +7,8 @@ from google.appengine.ext import ndb
 import jinja2
 import webapp2
 
+import datetime
+import time
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
@@ -30,6 +32,8 @@ MAIN_PAGE_FOOTER_TEMPLATE = """\
 
 DEFAULT_GUESTBOOK_NAME = 'default_guestbook'
 
+SEPARATOR = '_'
+
 # We set a parent key on the 'Greetings' to ensure that they are all
 # in the same entity group. Queries across the single entity group
 # will be consistent.  However, the write rate should be limited to
@@ -41,14 +45,16 @@ def guestbook_key(guestbook_name=DEFAULT_GUESTBOOK_NAME):
     """
     return ndb.Key('Guestbook', guestbook_name)
 
-def resource_key(user_id, resource_name):
-    return ndb.Key('Resource', user_id+"_"+resource_name)
+def resource_key():
+    day = datetime.datetime.now().day;
+    month = datetime.datetime.now().month;
+    year = datetime.datetime.now().year;
+    return ndb.Key('Resource', str(day)+SEPARATOR+str(month)+SEPARATOR+str(year))
 
 class Author(ndb.Model):
     """Sub model for representing an author."""
     identity = ndb.StringProperty(indexed=False)
     email = ndb.StringProperty(indexed=False)
-
 
 class Greeting(ndb.Model):
     """A main model for representing an individual Guestbook entry."""
@@ -56,15 +62,19 @@ class Greeting(ndb.Model):
     content = ndb.StringProperty(indexed=False)
     date = ndb.DateTimeProperty(auto_now_add=True)
 
+class Reservations(ndb.Model):
+    reservedBy = ndb.StringProperty(indexed=False)
+    startTime = ndb.TimeProperty(indexed=False)
+    endTime = ndb.TimeProperty(indexed=False)
 
 class Resource(ndb.Model):
     name = ndb.StringProperty(indexed=False)
     startTime = ndb.TimeProperty(indexed=False)
     endTime = ndb.TimeProperty(indexed=False)
     tags = ndb.StringProperty(indexed=False)
+    reservations = ndb.StructuredProperty(Reservations, repeated = True)
 
 class MainPage(webapp2.RequestHandler):
-
     def get(self):
         guestbook_name = self.request.get('guestbook_name',
                                           DEFAULT_GUESTBOOK_NAME)
@@ -117,7 +127,14 @@ class AddResource(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('addResource.html')
         template_values = {}
         self.response.write(template.render(template_values))
-
+    def post(self):
+        resourceName = self.request.get('resourceName')
+        #resource = Resource(parent=resource_key())
+        template_values = {
+          'resourceName': resourceName,
+        }
+        template = JINJA_ENVIRONMENT.get_template('testTemplate.html')
+        self.response.write(template.render(template_values))
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
