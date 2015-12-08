@@ -214,8 +214,8 @@ class AddResource(webapp2.RequestHandler):
         if error is None:
             time1 = datetime.datetime.strptime(startTime,'%H:%M')
             time2 = datetime.datetime.strptime(endTime, '%H:%M')
-            if time2 < time1:
-                error = "End time should be after Start Time"
+            if time2 <= time1:
+                error = "End time should be after Start time"
 
         if not(error is None):
             template_values = {
@@ -230,6 +230,7 @@ class AddResource(webapp2.RequestHandler):
 
 ## Tags Processing
         tokens = tags.split(",")
+        tokens = [ s.strip() for s in tokens ]
 
 # Get Key and add to Datastore
         resource = Resource(parent=resource_key())
