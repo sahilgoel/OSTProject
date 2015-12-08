@@ -233,7 +233,7 @@ class AddResource(webapp2.RequestHandler):
 
 # Get Key and add to Datastore
         resource = Resource(parent=resource_key())
-        resource.resourceName = resourceName;
+        resource.name = resourceName;
         resource.startTime = datetime.datetime.strptime(startTime, '%H:%M')
         resource.endTime = datetime.datetime.strptime(endTime, '%H:%M')
         resource.tags = tokens
