@@ -7,21 +7,28 @@
   <body>
     <h2 align="center"> Add a resource </h2>
     <form action="/addResource" method="post">
+      {% if error %}
+        <error>
+          {{ error }}
+          <br>
+          <br>
+        </error>
+      {% endif %}
       <p>
         <label for="resourceName">Resource Name</label>
-        <input type="text" required name="resourceName"  />
+        <input type="text" required name="resourceName" value="{{ resourceName }}" />
       </p>
       <p>
         <label for="startTime">Start Time(HH:MM) </label>
-        <input type="text" required name="startTime" />
+        <input type="text" required name="startTime" value = "{{ startTime }}" />
       </p>
       <p>
         <label for="endTime">End Time(HH:MM) </label>
-        <input type="text" required name="endTime" />
+        <input type="text" required name="endTime" value = "{{ endTime }}" />
       </p>
       <p>
         <label for="tags">Tags </label>
-        <input type="text" required name="tags" placeholder="abc, xyz"/>
+        <input type="text" required name="tags" placeholder="abc, xyz" value = "{{ tags }}" />
       </p>
       <input type="submit">
     </form>

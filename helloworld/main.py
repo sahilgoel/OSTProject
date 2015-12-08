@@ -1,12 +1,9 @@
 import os
 import urllib
-
 from google.appengine.api import users
 from google.appengine.ext import ndb
-
 import jinja2
 import webapp2
-
 import datetime
 import time
 
@@ -128,13 +125,51 @@ class AddResource(webapp2.RequestHandler):
         template_values = {}
         self.response.write(template.render(template_values))
     def post(self):
+        template = JINJA_ENVIRONMENT.get_template('addResource.html')
         resourceName = self.request.get('resourceName')
-        #resource = Resource(parent=resource_key())
-        template_values = {
-          'resourceName': resourceName,
-        }
-        template = JINJA_ENVIRONMENT.get_template('testTemplate.html')
-        self.response.write(template.render(template_values))
+        error = None
+        if resourceName is None or len(resourceName) == 0:
+            error = 'Resource Name cannot be empty'
+            template_values = {
+              'error': error,
+            }
+            self.response.write(template.render(template_values))
+            return
+
+        startTime = self.request.get('startTime')
+        if startTime is None or len(startTime) == 0:
+            error = 'Start time cannot be empty'
+            template_values = {
+              'error': error,
+            }
+            self.response.write(template.render(template_values))
+            return
+
+        tokens = startTime.split(":")
+        if len(tokens) != 2:
+            error = "Time should be entered in format HH:MM"
+            template_values = {
+              'error': error,
+            }
+            self.response.write(template.render(template_values))
+            return
+        
+        hours = tokens[0]
+        minutes = tokens[1]
+        if not(hours.isdigit()) or not(hours.isdigit()):
+            error = "HH and MM should be numbers only"
+        elif int(hours) < 0 or int(hours) >= 24:
+            error = "HH should be between 00 and 23"
+        elif int(minutes) < 0 or int(minutes) >= 60:
+            error = "MM should be between 00 and 60"
+        if not(error is None):
+            template_values = {
+                'error': error,
+            }
+            self.response.write(template.render(template_values))
+            return
+        else:
+            self.redirect('/')
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
