@@ -12,21 +12,6 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     extensions=['jinja2.ext.autoescape'],
     autoescape=True)
 
-MAIN_PAGE_FOOTER_TEMPLATE = """\
-    <form action="/sign?%s" method="post">
-      <div><textarea name="content" rows="3" cols="60"></textarea></div>
-      <div><input type="submit" value="Sign Guestbook"></div>
-    </form>
-    <hr>
-    <form>Guestbook name:
-      <input value="%s" name="guestbook_name">
-      <input type="submit" value="switch">
-    </form>
-    <a href="%s">%s</a>
-  </body>
-</html>
-"""
-
 DEFAULT_GUESTBOOK_NAME = 'default_guestbook'
 
 SEPARATOR = '_'
@@ -61,18 +46,21 @@ class Greeting(ndb.Model):
 
 class Reservations(ndb.Model):
     reservedBy = ndb.StringProperty(indexed=False)
-    startTime = ndb.TimeProperty(indexed=False)
-    endTime = ndb.TimeProperty(indexed=False)
+    startTime = ndb.DateTimeProperty(indexed=False)
+    endTime = ndb.DateTimeProperty(indexed=False)
 
 class Resource(ndb.Model):
     name = ndb.StringProperty(indexed=False)
-    startTime = ndb.TimeProperty(indexed=False)
-    endTime = ndb.TimeProperty(indexed=False)
-    tags = ndb.StringProperty(indexed=False)
+    startTime = ndb.DateTimeProperty(indexed=False)
+    endTime = ndb.DateTimeProperty(indexed=False)
+    tags = ndb.StringProperty(indexed=False, repeated = True)
     reservations = ndb.StructuredProperty(Reservations, repeated = True)
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
+        #key = resource_key()
+        #resources_query = Resources.query(ancestor=key)
+        #resources = resources_query.fetch(10)
         guestbook_name = self.request.get('guestbook_name',
                                           DEFAULT_GUESTBOOK_NAME)
         greetings_query = Greeting.query(
@@ -118,6 +106,7 @@ class Guestbook(webapp2.RequestHandler):
         query_params = {'guestbook_name': guestbook_name}
         self.redirect('/?' + urllib.urlencode(query_params))
 
+
 class AddResource(webapp2.RequestHandler):
     def get(self):
         #user_name = users.get_current_user()
@@ -127,33 +116,47 @@ class AddResource(webapp2.RequestHandler):
     def post(self):
         template = JINJA_ENVIRONMENT.get_template('addResource.html')
         resourceName = self.request.get('resourceName')
+        startTime = self.request.get('startTime')
+        endTime = self.request.get('endTime')
+        tags = self.request.get('tags')
         error = None
         if resourceName is None or len(resourceName) == 0:
             error = 'Resource Name cannot be empty'
             template_values = {
               'error': error,
+              'resourceName': resourceName,
+              'startTime': startTime,
+              'endTime': endTime,
+              'tags': tags,
             }
             self.response.write(template.render(template_values))
             return
 
+##      Start Time Processing
         startTime = self.request.get('startTime')
         if startTime is None or len(startTime) == 0:
             error = 'Start time cannot be empty'
             template_values = {
               'error': error,
+              'resourceName': resourceName,
+              'endTime': endTime,
+              'tags': tags,
             }
             self.response.write(template.render(template_values))
             return
 
         tokens = startTime.split(":")
         if len(tokens) != 2:
-            error = "Time should be entered in format HH:MM"
+            error = "Start time should be entered in format HH:MM"
             template_values = {
               'error': error,
+              'resourceName': resourceName,
+              'startTime': '',
+              'endTime': endTime,
+              'tags': tags,
             }
             self.response.write(template.render(template_values))
             return
-        
         hours = tokens[0]
         minutes = tokens[1]
         if not(hours.isdigit()) or not(hours.isdigit()):
@@ -164,12 +167,81 @@ class AddResource(webapp2.RequestHandler):
             error = "MM should be between 00 and 60"
         if not(error is None):
             template_values = {
-                'error': error,
+              'error': error,
+              'resourceName': resourceName,
+              'startTime': '',
+              'endTime': endTime,
+              'tags': tags,
             }
             self.response.write(template.render(template_values))
             return
-        else:
-            self.redirect('/')
+
+
+## End Time Processing
+        if endTime is None or len(endTime) == 0:
+            error = 'Start time cannot be empty'
+            template_values = {
+              'error': error,
+              'resourceName': resourceName,
+              'startTime': startTime,
+              'tags': tags,
+            }
+            self.response.write(template.render(template_values))
+            return
+
+        tokens = endTime.split(":")
+        if len(tokens) != 2:
+            error = "End time should be entered in format HH:MM"
+            template_values = {
+              'error': error,
+              'resourceName': resourceName,
+              'startTime': startTime,
+              'endTime': '',
+              'tags': tags,
+            }
+            self.response.write(template.render(template_values))
+            return
+        hours = tokens[0]
+        minutes = tokens[1]
+        if not(hours.isdigit()) or not(hours.isdigit()):
+            error = "HH and MM should be numbers only"
+        elif int(hours) < 0 or int(hours) >= 24:
+            error = "HH should be between 00 and 23"
+        elif int(minutes) < 0 or int(minutes) >= 60:
+            error = "MM should be between 00 and 60"
+
+        
+        if error is None:
+            time1 = datetime.datetime.strptime(startTime,'%H:%M')
+            time2 = datetime.datetime.strptime(endTime, '%H:%M')
+            if time2 < time1:
+                error = "End time should be after Start Time"
+
+        if not(error is None):
+            template_values = {
+              'error': error,
+              'resourceName': resourceName,
+              'startTime': startTime,
+              'endTime': '',
+              'tags': tags,
+            }
+            self.response.write(template.render(template_values))
+            return
+
+## Tags Processing
+        tokens = tags.split(",")
+
+# Get Key and add to Datastore
+        resource = Resource(parent=resource_key())
+        resource.resourceName = resourceName;
+        resource.startTime = datetime.datetime.strptime(startTime, '%H:%M')
+        resource.endTime = datetime.datetime.strptime(endTime, '%H:%M')
+        resource.tags = tokens
+        resource.reservations = []
+        resource.put()
+
+# Redirect to original landing page
+        self.redirect('/')
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
