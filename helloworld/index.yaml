@@ -15,3 +15,13 @@ indexes:
   properties:
   - name: date
     direction: desc
+
+- kind: Reservations
+  ancestor: yes
+  properties:
+  - name: endTime
+
+- kind: Reservations
+  ancestor: yes
+  properties:
+  - name: startTime

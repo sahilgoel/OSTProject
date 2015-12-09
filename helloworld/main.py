@@ -33,6 +33,9 @@ def resource_key():
     year = datetime.datetime.now().year;
     return ndb.Key('Resource', str(day)+SEPARATOR+str(month)+SEPARATOR+str(year))
 
+def reservation_key(user_id):
+    return ndb.Key('Reservation', user_id)
+
 class Author(ndb.Model):
     """Sub model for representing an author."""
     identity = ndb.StringProperty(indexed=False)
@@ -45,14 +48,18 @@ class Greeting(ndb.Model):
     date = ndb.DateTimeProperty(auto_now_add=True)
 
 class Reservations(ndb.Model):
+    resourceName = ndb.StringProperty(indexed=False)
     reservedBy = ndb.StringProperty(indexed=False)
+    startTime = ndb.DateTimeProperty(indexed=True)
+    endTime = ndb.DateTimeProperty(indexed=True)
+
+class TimeSlot(ndb.Model):
     startTime = ndb.DateTimeProperty(indexed=False)
     endTime = ndb.DateTimeProperty(indexed=False)
 
 class Resource(ndb.Model):
     name = ndb.StringProperty(indexed=False)
-    startTime = ndb.DateTimeProperty(indexed=False)
-    endTime = ndb.DateTimeProperty(indexed=False)
+    availability = ndb.StructuredProperty(TimeSlot, repeated=True)
     tags = ndb.StringProperty(indexed=False, repeated = True)
     reservations = ndb.StructuredProperty(Reservations, repeated = True)
 
@@ -61,17 +68,26 @@ class MainPage(webapp2.RequestHandler):
         #key = resource_key()
         #resources_query = Resources.query(ancestor=key)
         #resources = resources_query.fetch(10)
-        guestbook_name = self.request.get('guestbook_name',
-                                          DEFAULT_GUESTBOOK_NAME)
-        greetings_query = Greeting.query(
-            ancestor=guestbook_key(guestbook_name)).order(-Greeting.date)
-        greetings = greetings_query.fetch(10)
-
         user = users.get_current_user()
         url = users.create_logout_url(self.request.uri)
         url_linktext = 'Logout'
         if user is None:
             self.redirect(users.create_login_url(self.request.uri))
+
+        currentTime = datetime.datetime.now()
+        hour = currentTime.hour
+        minute = currentTime.minute
+        currenTimeString = str(hour)+':'+str(minute)
+        currentTimeObject = datetime.datetime.strptime(currenTimeString,'%H:%M')
+        reservations_query = Reservations.query(ancestor=reservation_key(str(user.user_id)))
+        reservations_query = reservations_query.order(Reservations.startTime)    
+        reservations = reservations_query.fetch()
+
+        guestbook_name = self.request.get('guestbook_name',
+                                          DEFAULT_GUESTBOOK_NAME)
+        greetings_query = Greeting.query(
+            ancestor=guestbook_key(guestbook_name)).order(-Greeting.date)
+        greetings = greetings_query.fetch(10)
 
         template_values = {
             'user': user,
@@ -79,6 +95,7 @@ class MainPage(webapp2.RequestHandler):
             'guestbook_name': urllib.quote_plus(guestbook_name),
             'url': url,
             'url_linktext': url_linktext,
+            'reservations': reservations,
         }
 
         template = JINJA_ENVIRONMENT.get_template('index.html')
@@ -235,8 +252,9 @@ class AddResource(webapp2.RequestHandler):
 # Get Key and add to Datastore
         resource = Resource(parent=resource_key())
         resource.name = resourceName;
-        resource.startTime = datetime.datetime.strptime(startTime, '%H:%M')
-        resource.endTime = datetime.datetime.strptime(endTime, '%H:%M')
+        t_startTime = datetime.datetime.strptime(startTime, '%H:%M')
+        t_endTime = datetime.datetime.strptime(endTime, '%H:%M')
+        resource.availability = [TimeSlot(startTime = t_startTime, endTime = t_endTime)]
         resource.tags = tokens
         resource.reservations = []
         resource.put()

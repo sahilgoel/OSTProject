@@ -18,6 +18,17 @@
       <blockquote>{{ greeting.content }}</blockquote>
     {% endfor %}
 
+    {% for reservation in reservations %}
+      <b>Resource: {{reservation.resourceName}}
+        <br>
+        Reserved By: {{reservation.reservedBy}}
+        <br>
+        Start Time: {{reservation.startTime.strftime('%H:%M')}}
+        <br>
+        End Time: {{ reservation.endTime.strftime('%H:%M') }}
+      </b>
+    {% endfor %}
+
     <form action="/sign?guestbook_name={{ guestbook_name }}" method="post">
       <div><textarea name="content" rows="3" cols="60"></textarea></div>
       <div><input type="submit" value="Sign Guestbook"></div>
