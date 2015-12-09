@@ -17,15 +17,15 @@
       {% endif %}
       <blockquote>{{ greeting.content }}</blockquote>
     {% endfor %}
-
+    My Reservations:
+    <br>
+    Resource Name, Start Time, End Time
+    <br>
     {% for reservation in reservations %}
-      <b>Resource: {{reservation.resourceName}}
+      <b>{{reservation.resourceName}},
+        {{reservation.startTime.strftime('%H:%M')}},
+        {{reservation.endTime.strftime('%H:%M')}}
         <br>
-        Reserved By: {{reservation.reservedBy}}
-        <br>
-        Start Time: {{reservation.startTime.strftime('%H:%M')}}
-        <br>
-        End Time: {{ reservation.endTime.strftime('%H:%M') }}
       </b>
     {% endfor %}
 

@@ -22,9 +22,6 @@ SEPARATOR = '_'
 # ~1/second.
 
 def guestbook_key(guestbook_name=DEFAULT_GUESTBOOK_NAME):
-    """Constructs a Datastore key for a Guestbook entity.
-    We use guestbook_name as the key.
-    """
     return ndb.Key('Guestbook', guestbook_name)
 
 def resource_key():
@@ -35,6 +32,7 @@ def resource_key():
 
 def reservation_key(user_id):
     return ndb.Key('Reservation', user_id)
+
 
 class Author(ndb.Model):
     """Sub model for representing an author."""
@@ -49,9 +47,18 @@ class Greeting(ndb.Model):
 
 class Reservations(ndb.Model):
     resourceName = ndb.StringProperty(indexed=False)
-    reservedBy = ndb.StringProperty(indexed=False)
+    reservedBy = ndb.StringProperty(indexed=True)
     startTime = ndb.DateTimeProperty(indexed=True)
-    endTime = ndb.DateTimeProperty(indexed=True)
+    endTime = ndb.DateTimeProperty(indexed=False)
+
+## To remove
+def enterOneReservation():
+    reservation = Reservations(parent=reservation_key(users.get_current_user().user_id()))
+    reservation.resourceName = 'Phone'
+    reservation.reservedBy = users.get_current_user().email()
+    reservation.startTime = datetime.datetime.strptime('15:00', "%H:%M")
+    reservation.endTime = datetime.datetime.strptime('15:35', "%H:%M")
+    reservation.put()
 
 class TimeSlot(ndb.Model):
     startTime = ndb.DateTimeProperty(indexed=False)
@@ -62,9 +69,11 @@ class Resource(ndb.Model):
     availability = ndb.StructuredProperty(TimeSlot, repeated=True)
     tags = ndb.StringProperty(indexed=False, repeated = True)
     reservations = ndb.StructuredProperty(Reservations, repeated = True)
+    owner = ndb.StringProperty(indexed=True)
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
+        enterOneReservation()
         #key = resource_key()
         #resources_query = Resources.query(ancestor=key)
         #resources = resources_query.fetch(10)
@@ -75,13 +84,19 @@ class MainPage(webapp2.RequestHandler):
             self.redirect(users.create_login_url(self.request.uri))
 
         currentTime = datetime.datetime.now()
+        # To convert in EST/EDT
+        delta = datetime.timedelta(hours = 5)
+        currentTime = currentTime - delta
         hour = currentTime.hour
         minute = currentTime.minute
         currenTimeString = str(hour)+':'+str(minute)
         currentTimeObject = datetime.datetime.strptime(currenTimeString,'%H:%M')
-        reservations_query = Reservations.query(ancestor=reservation_key(str(user.user_id)))
+        reservations_query = Reservations.query(ancestor=reservation_key(user.user_id()))
         reservations_query = reservations_query.order(Reservations.startTime)    
         reservations = reservations_query.fetch()
+        reservations = [ r for r in reservations if r.endTime >= currentTimeObject ]
+        print currentTimeObject
+        print reservations
 
         guestbook_name = self.request.get('guestbook_name',
                                           DEFAULT_GUESTBOOK_NAME)
@@ -103,11 +118,6 @@ class MainPage(webapp2.RequestHandler):
 
 class Guestbook(webapp2.RequestHandler):
     def post(self):
-        # We set the same parent key on the 'Greeting' to ensure each
-        # Greeting is in the same entity group. Queries across the
-        # single entity group will be consistent. However, the write
-        # rate to a single entity group should be limited to
-        # ~1/second.
         guestbook_name = self.request.get('guestbook_name',
                                           DEFAULT_GUESTBOOK_NAME)
         greeting = Greeting(parent=guestbook_key(guestbook_name))
@@ -256,6 +266,7 @@ class AddResource(webapp2.RequestHandler):
         t_endTime = datetime.datetime.strptime(endTime, '%H:%M')
         resource.availability = [TimeSlot(startTime = t_startTime, endTime = t_endTime)]
         resource.tags = tokens
+        resource.owner = str(users.get_current_user().user_id());
         resource.reservations = []
         resource.put()
 
