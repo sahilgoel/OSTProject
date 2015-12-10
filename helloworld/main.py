@@ -6,6 +6,7 @@ import jinja2
 import webapp2
 import datetime
 import time
+from jinja2 import Environment
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
@@ -31,7 +32,15 @@ def resource_key():
     return ndb.Key('Resource', str(day)+SEPARATOR+str(month)+SEPARATOR+str(year))
 
 def reservation_key(user_id):
-    return ndb.Key('Reservation', user_id)
+    currentTime = datetime.datetime.now()
+        # To convert in EST/EDT
+    delta = datetime.timedelta(hours = 5)
+    currentTime = currentTime - delta
+    day = str(currentTime.day)
+    month = str(currentTime.month)
+    year = str(currentTime.year)
+    date = day+SEPARATOR+month+SEPARATOR+year
+    return ndb.Key('Reservation', user_id+SEPARATOR+date)
 
 
 class Author(ndb.Model):
@@ -56,9 +65,24 @@ def enterOneReservation():
     reservation = Reservations(parent=reservation_key(users.get_current_user().user_id()))
     reservation.resourceName = 'Phone'
     reservation.reservedBy = users.get_current_user().email()
-    reservation.startTime = datetime.datetime.strptime('15:00', "%H:%M")
-    reservation.endTime = datetime.datetime.strptime('15:35', "%H:%M")
+    reservation.startTime = datetime.datetime.strptime('6:00', "%H:%M")
+    reservation.endTime = datetime.datetime.strptime('7:35', "%H:%M")
     reservation.put()
+
+def getReservations(userId):
+    currentTime = datetime.datetime.now()
+    # To convert in EST/EDT
+    delta = datetime.timedelta(hours = 5)
+    currentTime = currentTime - delta
+    hour = currentTime.hour
+    minute = currentTime.minute
+    currenTimeString = str(hour)+':'+str(minute)
+    currentTimeObject = datetime.datetime.strptime(currenTimeString,'%H:%M')
+    reservations_query = Reservations.query(ancestor=reservation_key(userId))
+    reservations_query = reservations_query.order(Reservations.startTime)    
+    reservations = reservations_query.fetch()
+    reservations = [ r for r in reservations if r.endTime >= currentTimeObject ]   
+    return reservations
 
 class TimeSlot(ndb.Model):
     startTime = ndb.DateTimeProperty(indexed=False)
@@ -70,33 +94,45 @@ class Resource(ndb.Model):
     tags = ndb.StringProperty(indexed=False, repeated = True)
     reservations = ndb.StructuredProperty(Reservations, repeated = True)
     owner = ndb.StringProperty(indexed=True)
+    lastReservation = ndb.DateTimeProperty(indexed=True)
+
+def processAvailabilities(availabilities):
+    result = ''
+    for availability in availabilities:
+        startHour = str(availability.startTime.hour)
+        startMinute = str(availability.startTime.minute)
+        endHour = str(availability.endTime.hour)
+        endMinute = str(availability.endTime.minute)
+        timeslot = startHour+":"+startMinute+"-" +endHour+":"+endMinute+"  "
+        result = result + timeslot
+    return result
+
+def processTags(tags):
+    result = ''
+    flag = 0
+    for tag in tags:
+        result = result + "/" + tag
+    return result[1:]
+
+def getResources():
+    key = resource_key()
+    resources_query = Resource.query(ancestor=key)
+    resources = resources_query.fetch()
+    #processResources(resources)
+    return resources    
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
-        enterOneReservation()
-        #key = resource_key()
-        #resources_query = Resources.query(ancestor=key)
-        #resources = resources_query.fetch(10)
+        #enterOneReservation()
+
         user = users.get_current_user()
         url = users.create_logout_url(self.request.uri)
         url_linktext = 'Logout'
         if user is None:
             self.redirect(users.create_login_url(self.request.uri))
 
-        currentTime = datetime.datetime.now()
-        # To convert in EST/EDT
-        delta = datetime.timedelta(hours = 5)
-        currentTime = currentTime - delta
-        hour = currentTime.hour
-        minute = currentTime.minute
-        currenTimeString = str(hour)+':'+str(minute)
-        currentTimeObject = datetime.datetime.strptime(currenTimeString,'%H:%M')
-        reservations_query = Reservations.query(ancestor=reservation_key(user.user_id()))
-        reservations_query = reservations_query.order(Reservations.startTime)    
-        reservations = reservations_query.fetch()
-        reservations = [ r for r in reservations if r.endTime >= currentTimeObject ]
-        print currentTimeObject
-        print reservations
+        reservations = getReservations(user.user_id())
+        resources = getResources()
 
         guestbook_name = self.request.get('guestbook_name',
                                           DEFAULT_GUESTBOOK_NAME)
@@ -111,8 +147,11 @@ class MainPage(webapp2.RequestHandler):
             'url': url,
             'url_linktext': url_linktext,
             'reservations': reservations,
+            'resources': resources
         }
 
+        JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
+        JINJA_ENVIRONMENT.filters['processTags'] = processTags
         template = JINJA_ENVIRONMENT.get_template('index.html')
         self.response.write(template.render(template_values))
 
@@ -203,7 +242,6 @@ class AddResource(webapp2.RequestHandler):
             self.response.write(template.render(template_values))
             return
 
-
 ## End Time Processing
         if endTime is None or len(endTime) == 0:
             error = 'Start time cannot be empty'
@@ -266,12 +304,14 @@ class AddResource(webapp2.RequestHandler):
         t_endTime = datetime.datetime.strptime(endTime, '%H:%M')
         resource.availability = [TimeSlot(startTime = t_startTime, endTime = t_endTime)]
         resource.tags = tokens
-        resource.owner = str(users.get_current_user().user_id());
+        resource.owner = str(users.get_current_user().email());
         resource.reservations = []
         resource.put()
 
 # Redirect to original landing page
         self.redirect('/')
+
+JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),

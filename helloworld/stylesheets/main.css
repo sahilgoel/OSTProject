@@ -18,3 +18,11 @@ error {
 	color: red;
 	margin-bottom: 10cm;
 }
+
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 15px;
+}
