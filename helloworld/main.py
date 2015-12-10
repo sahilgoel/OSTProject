@@ -119,6 +119,10 @@ def getResources():
     #processResources(resources)
     return resources    
 
+def getMyResources(resources):
+    myResources = [ r for r in resources if r.owner == users.get_current_user().email() ]
+    return myResources
+
 class MainPage(webapp2.RequestHandler):
     def get(self):
         #enterOneReservation()
@@ -131,6 +135,7 @@ class MainPage(webapp2.RequestHandler):
 
         reservations = getReservations(user.user_id())
         resources = getResources()
+        myResources = getMyResources(resources)
 
         guestbook_name = self.request.get('guestbook_name',
                                           DEFAULT_GUESTBOOK_NAME)
@@ -145,7 +150,8 @@ class MainPage(webapp2.RequestHandler):
             'url': url,
             'url_linktext': url_linktext,
             'reservations': reservations,
-            'resources': resources
+            'resources': resources,
+            'myResources': myResources,
         }
 
         JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities

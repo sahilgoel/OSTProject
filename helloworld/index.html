@@ -34,8 +34,10 @@
         {% endfor %}
       {% endif %}
     </table>
+
     <hr>
-    <h3 align="center" >Resources:</h3>
+    
+    <h3 align="center" >All Resources in System:</h3>
     <table style="width:100%">
       <tr>
         <td> Resource Name </td>
@@ -56,24 +58,35 @@
         {% endfor %}
       {% endif %}
     </table>
-    <hr>
-
-    <form action="/sign?guestbook_name={{ guestbook_name }}" method="post">
-      <div><textarea name="content" rows="3" cols="60"></textarea></div>
-      <div><input type="submit" value="Sign Guestbook"></div>
-    </form>
-
-    <hr>
-
-    <form>Guestbook name:
-      <input value="{{ guestbook_name }}" name="guestbook_name">
-      <input type="submit" value="switch">
-    </form>
-
-    <hr>
     
+    <hr>
+
+    <h3 align="center" >My owned Resources:</h3>
+    <table style="width:100%">
+      <tr>
+        <td> Resource Name </td>
+        <td> Availabilities </td>
+        <td> Tags </td>
+        <td> Owner </td>
+        <td> Reservations </td>
+      </tr> 
+      {% if myResources %}
+        {% for resource in myResources %}
+          <tr>
+            <td> {{resource.name}} </td>
+            <td> {{resource.availability | processAvailabilities}} </td>
+            <td> {{resource.tags | processTags }} </td>
+            <td> {{resource.owner}} </td>
+            <td> {{resource.reservations}} </td>
+          </tr>
+        {% endfor %}
+      {% endif %}
+    </table>
+
+
+    <hr>
     <form action="/addResource" method="get">
-      <div><input type="submit" value="Add a Resource"></div>
+      <h3 align="center"><div align="center"><input type="submit" value="Add a Resource"></div></h3>
     </form>
     
     <hr>
