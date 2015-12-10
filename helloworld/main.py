@@ -107,6 +107,26 @@ def getMyResources(resources):
     myResources = [ r for r in resources if r.owner == users.get_current_user().email() ]
     return myResources
 
+def checkTimeFormat(time):
+    if(len(time.split(":")) != 2):
+        return True
+    return False
+
+def checkLimits(time):
+    tokens = time.split(":")
+    hours = int(tokens[0])
+    minutes = int(tokens[1])
+    if hours<0 or hours>=24 or minutes<0 or minutes>=60:
+        return True
+    return False
+
+def checkDuration(duration):
+    if not(duration.isdigit()):
+        return True
+    duration = int(duration)
+    if duration <= 0:
+        return True
+
 class MainPage(webapp2.RequestHandler):
     def get(self):
         #enterOneReservation()
@@ -147,7 +167,28 @@ class AddReservation(webapp2.RequestHandler):
     def post(self):
         uid = self.request.get('uid')
         startTime = self.request.get('startTime')
-        endTime = self.request.get('endTime')
+        duration = self.request.get('duration')
+        error = checkTimeFormat(startTime)
+        errorMsg = None
+        if error:
+            errorMsg = 'Please enter time in HH:MM format'
+        if errorMsg is None:
+            error = checkLimits(startTime)
+            if error:
+                errorMsg = 'Time should be between 00:00 and 23:59'
+        if errorMsg is None:
+            error = checkDuration(duration)
+            if error:
+                errorMsg = 'Duration should be a positive number'
+        if error:
+            template_values = {
+                'uid' : uid,
+                'startTime': startTime,
+                'duration': duration,
+                'error' : errorMsg,
+            }
+            template = JINJA_ENVIRONMENT.get_template('addReservation.html')
+            self.response.write(template.render(template_values))
 
 class ResourceMain(webapp2.RequestHandler):
     def get(self):
