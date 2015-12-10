@@ -10,14 +10,14 @@
         <tr>
           <td> Reserved by </td>
           <td> Start Time </td>
-          <td> End Time </td>
+          <td> Duration </td>
         </tr> 
       {% if resource.reservations %}
         {% for reservation in resource.reservations %}
           <tr>
             <td> {{reservation.reservedBy}} </td>
             <td> {{reservation.startTime.strftime('%H:%M')}} </td>
-            <td> {{reservation.endTime.strftime('%H:%M')}} </td>
+            <td> {{reservation.duration}} </td>
           </tr>
         {% endfor %}
       {% endif %}
@@ -25,7 +25,7 @@
 
     <hr>
     <a href="/addReservation?uid={{resource.uid}}"> Add Reservation </a> 
-    
+
     <hr>
 
     {% if resource.owner == currentUser %}

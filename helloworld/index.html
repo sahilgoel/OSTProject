@@ -22,7 +22,7 @@
       <tr>
         <td>Resource Name</td>
         <td>Start Time</td> 
-        <td>End Time</td>
+        <td>Duration</td>
         <td>Delete Reservations</td>
       </tr>
       {% if reservations %}
@@ -30,7 +30,7 @@
           <tr>
             <td> <a href="/resourceMain?uid={{reservation.uid}}"> {{reservation.resourceName}} </a> </td>
             <td>{{reservation.startTime.strftime('%H:%M')}}</td>
-            <td>{{reservation.endTime.strftime('%H:%M')}}</td>
+            <td>{{reservation.duration}}</td>
             <td> <form action="/deleteReservation" method="get"> 
                      <input type="submit" value="Delete this reservation"> 
                  </form>
