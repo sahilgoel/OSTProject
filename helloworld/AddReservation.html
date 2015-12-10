@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+<head>
+  <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+</head>
+  <body>
+    <h2 align="center"> Add a reservation </h2>
+    <form action="/addReservation" method="post">
+      {% if error %}
+        <error>
+          {{ error }}
+          <br>
+          <br>
+        </error>
+      {% endif %}
+      <p>
+        <label for="startTime">Start Time(HH:MM) </label>
+        <input type="text" required name="startTime" value = "{{ startTime }}" />
+      </p>
+      <p>
+        <label for="duration">Duration(In minutes) </label>
+        <input type="number" min="0" required name="duration" value = "{{ duration }}" />
+      </p>
+      <p>
+        <input type="hidden" name="uid" value="{{uid}}">
+      </p>
+      <br>
+      <hr>
+      <input type="submit">
+    </form>
+  </body>
+</html>
+{% endautoescape %}

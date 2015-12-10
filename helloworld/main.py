@@ -45,16 +45,6 @@ class Reservations(ndb.Model):
     endTime = ndb.DateTimeProperty(indexed=False)
     uid = ndb.StringProperty(indexed=True)
 
-## To remove
-def enterOneReservation():
-    reservation = Reservations(parent=reservation_key(users.get_current_user().user_id()))
-    reservation.resourceName = 'Phone'
-    reservation.reservedBy = users.get_current_user().email()
-    reservation.startTime = datetime.datetime.strptime('1:00', "%H:%M")
-    reservation.endTime = datetime.datetime.strptime('23:35', "%H:%M")
-    reservation.uid = str(uuid.uuid4())
-    reservation.put()
-
 def getReservations(userId):
     currentTime = datetime.datetime.now()
     # To convert in EST/EDT
@@ -106,6 +96,13 @@ def getResources():
     #processResources(resources)
     return resources    
 
+def getResourceFromUid(resourceUid):
+    key = resource_key()
+    resources_query = Resource.query(Resource.uid == resourceUid)
+    resource = resources_query.fetch()
+    resource = resource[0]
+    return resource
+
 def getMyResources(resources):
     myResources = [ r for r in resources if r.owner == users.get_current_user().email() ]
     return myResources
@@ -138,9 +135,29 @@ class MainPage(webapp2.RequestHandler):
             template = JINJA_ENVIRONMENT.get_template('index.html')
             self.response.write(template.render(template_values))
 
+class AddReservation(webapp2.RequestHandler):
+    def get(self):
+        resourceUid = self.request.GET['uid']
+        resource = Resource.query(Resource.uid == resourceUid).get()
+        template_values = {
+            'uid': resourceUid,
+        }
+        template = JINJA_ENVIRONMENT.get_template('addReservation.html')
+        self.response.write(template.render(template_values))
+    def post(self):
+        uid = self.request.get('uid')
+        startTime = self.request.get('startTime')
+        endTime = self.request.get('endTime')
+
 class ResourceMain(webapp2.RequestHandler):
     def get(self):
-        template_values = {}
+        resourceUid = self.request.GET['uid']
+        resource = getResourceFromUid(resourceUid)
+        currentUser = str(users.get_current_user().email())
+        template_values = {
+            'resource':resource,
+            'currentUser':currentUser,
+        }
         template = JINJA_ENVIRONMENT.get_template('resourceMain.html')
         self.response.write(template.render(template_values))
         
@@ -290,5 +307,6 @@ JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/addResource', AddResource),
-    ('/resourceMain', ResourceMain)
+    ('/resourceMain', ResourceMain),
+    ('/addReservation', AddReservation)
 ], debug=True)
