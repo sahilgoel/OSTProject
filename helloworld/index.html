@@ -23,14 +23,20 @@
         <td>Resource Name</td>
         <td>Start Time</td> 
         <td>End Time</td>
+        <td>Delete Reservations</td>
       </tr>
       {% if reservations %}
         {% for reservation in reservations %}
           <tr>
-            <td>{{reservation.resourceName}}</td>
+            <td> <a href="/resourceMain?uid={{reservation.uid}}"> {{reservation.resourceName}} </a> </td>
             <td>{{reservation.startTime.strftime('%H:%M')}}</td>
             <td>{{reservation.endTime.strftime('%H:%M')}}</td>
+            <td> <form action="/deleteReservation" method="get"> 
+                     <input type="submit" value="Delete this reservation"> 
+                 </form>
+            </td>
           </tr>
+
         {% endfor %}
       {% endif %}
     </table>
@@ -43,17 +49,13 @@
         <td> Resource Name </td>
         <td> Availabilities </td>
         <td> Tags </td>
-        <td> Owner </td>
-        <td> Reservations </td>
       </tr> 
       {% if resources %}
         {% for resource in resources %}
           <tr>
-            <td> {{resource.name}} </td>
+            <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
             <td> {{resource.availability | processAvailabilities}} </td>
             <td> {{resource.tags | processTags }} </td>
-            <td> {{resource.owner}} </td>
-            <td> {{resource.reservations}} </td>
           </tr>
         {% endfor %}
       {% endif %}
@@ -67,17 +69,13 @@
         <td> Resource Name </td>
         <td> Availabilities </td>
         <td> Tags </td>
-        <td> Owner </td>
-        <td> Reservations </td>
       </tr> 
       {% if myResources %}
         {% for resource in myResources %}
           <tr>
-            <td> {{resource.name}} </td>
+            <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
             <td> {{resource.availability | processAvailabilities}} </td>
             <td> {{resource.tags | processTags }} </td>
-            <td> {{resource.owner}} </td>
-            <td> {{resource.reservations}} </td>
           </tr>
         {% endfor %}
       {% endif %}

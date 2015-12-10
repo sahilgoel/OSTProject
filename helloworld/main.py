@@ -6,6 +6,7 @@ import jinja2
 import webapp2
 import datetime
 import time
+import uuid
 from jinja2 import Environment
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -17,13 +18,6 @@ DEFAULT_GUESTBOOK_NAME = 'default_guestbook'
 
 SEPARATOR = '_'
 
-# We set a parent key on the 'Greetings' to ensure that they are all
-# in the same entity group. Queries across the single entity group
-# will be consistent.  However, the write rate should be limited to
-# ~1/second.
-
-def guestbook_key(guestbook_name=DEFAULT_GUESTBOOK_NAME):
-    return ndb.Key('Guestbook', guestbook_name)
 
 def resource_key():
     day = datetime.datetime.now().day;
@@ -43,30 +37,22 @@ def reservation_key(user_id):
     return ndb.Key('Reservation', user_id+SEPARATOR+date)
 
 
-class Author(ndb.Model):
-    """Sub model for representing an author."""
-    identity = ndb.StringProperty(indexed=False)
-    email = ndb.StringProperty(indexed=False)
-
-class Greeting(ndb.Model):
-    """A main model for representing an individual Guestbook entry."""
-    author = ndb.StructuredProperty(Author)
-    content = ndb.StringProperty(indexed=False)
-    date = ndb.DateTimeProperty(auto_now_add=True)
-
 class Reservations(ndb.Model):
     resourceName = ndb.StringProperty(indexed=False)
+    resourceUid = ndb.StringProperty(indexed=False)
     reservedBy = ndb.StringProperty(indexed=True)
     startTime = ndb.DateTimeProperty(indexed=True)
     endTime = ndb.DateTimeProperty(indexed=False)
+    uid = ndb.StringProperty(indexed=True)
 
 ## To remove
 def enterOneReservation():
     reservation = Reservations(parent=reservation_key(users.get_current_user().user_id()))
     reservation.resourceName = 'Phone'
     reservation.reservedBy = users.get_current_user().email()
-    reservation.startTime = datetime.datetime.strptime('6:00', "%H:%M")
-    reservation.endTime = datetime.datetime.strptime('7:35', "%H:%M")
+    reservation.startTime = datetime.datetime.strptime('1:00', "%H:%M")
+    reservation.endTime = datetime.datetime.strptime('23:35', "%H:%M")
+    reservation.uid = str(uuid.uuid4())
     reservation.put()
 
 def getReservations(userId):
@@ -95,6 +81,7 @@ class Resource(ndb.Model):
     reservations = ndb.StructuredProperty(Reservations, repeated = True)
     owner = ndb.StringProperty(indexed=True)
     lastReservation = ndb.DateTimeProperty(indexed=True)
+    uid = ndb.StringProperty(indexed=True)
 
 def processAvailabilities(availabilities):
     result = ''
@@ -126,56 +113,37 @@ def getMyResources(resources):
 class MainPage(webapp2.RequestHandler):
     def get(self):
         #enterOneReservation()
-
         user = users.get_current_user()
         url = users.create_logout_url(self.request.uri)
         url_linktext = 'Logout'
+
         if user is None:
             self.redirect(users.create_login_url(self.request.uri))
+        else:
+            reservations = getReservations(user.user_id())
+            resources = getResources()
+            myResources = getMyResources(resources)
 
-        reservations = getReservations(user.user_id())
-        resources = getResources()
-        myResources = getMyResources(resources)
+            template_values = {
+                'user': user,
+                'url': url,
+                'url_linktext': url_linktext,
+                'reservations': reservations,
+                'resources': resources,
+                'myResources': myResources,
+            }
 
-        guestbook_name = self.request.get('guestbook_name',
-                                          DEFAULT_GUESTBOOK_NAME)
-        greetings_query = Greeting.query(
-            ancestor=guestbook_key(guestbook_name)).order(-Greeting.date)
-        greetings = greetings_query.fetch(10)
+            JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
+            JINJA_ENVIRONMENT.filters['processTags'] = processTags
+            template = JINJA_ENVIRONMENT.get_template('index.html')
+            self.response.write(template.render(template_values))
 
-        template_values = {
-            'user': user,
-            'greetings': greetings,
-            'guestbook_name': urllib.quote_plus(guestbook_name),
-            'url': url,
-            'url_linktext': url_linktext,
-            'reservations': reservations,
-            'resources': resources,
-            'myResources': myResources,
-        }
-
-        JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
-        JINJA_ENVIRONMENT.filters['processTags'] = processTags
-        template = JINJA_ENVIRONMENT.get_template('index.html')
+class ResourceMain(webapp2.RequestHandler):
+    def get(self):
+        template_values = {}
+        template = JINJA_ENVIRONMENT.get_template('resourceMain.html')
         self.response.write(template.render(template_values))
-
-class Guestbook(webapp2.RequestHandler):
-    def post(self):
-        guestbook_name = self.request.get('guestbook_name',
-                                          DEFAULT_GUESTBOOK_NAME)
-        greeting = Greeting(parent=guestbook_key(guestbook_name))
-
-        if users.get_current_user():
-            greeting.author = Author(
-                    identity=users.get_current_user().user_id(),
-                    email=users.get_current_user().email())
-
-        greeting.content = self.request.get('content')
-        greeting.put()
-
-        query_params = {'guestbook_name': guestbook_name}
-        self.redirect('/?' + urllib.urlencode(query_params))
-
+        
 
 class AddResource(webapp2.RequestHandler):
     def get(self):
@@ -311,6 +279,7 @@ class AddResource(webapp2.RequestHandler):
         resource.owner = str(users.get_current_user().email());
         resource.reservations = []
         resource.lastReservation = datetime.datetime.min
+        resource.uid = str(uuid.uuid4())
         resource.put()
 
 # Redirect to original landing page
@@ -320,6 +289,6 @@ JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/sign', Guestbook),
-    ('/addResource', AddResource)
+    ('/addResource', AddResource),
+    ('/resourceMain', ResourceMain)
 ], debug=True)
