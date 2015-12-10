@@ -25,3 +25,9 @@ indexes:
   ancestor: yes
   properties:
   - name: startTime
+
+- kind: Resource
+  ancestor: yes
+  properties:
+  - name: lastReservation
+    direction: desc

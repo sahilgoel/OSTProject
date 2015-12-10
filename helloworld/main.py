@@ -99,11 +99,9 @@ class Resource(ndb.Model):
 def processAvailabilities(availabilities):
     result = ''
     for availability in availabilities:
-        startHour = str(availability.startTime.hour)
-        startMinute = str(availability.startTime.minute)
-        endHour = str(availability.endTime.hour)
-        endMinute = str(availability.endTime.minute)
-        timeslot = startHour+":"+startMinute+"-" +endHour+":"+endMinute+"  "
+        startTime = availability.startTime.strftime('%H:%M')
+        endTime = availability.endTime.strftime('%H:%M')
+        timeslot = startTime+"-" +endTime + " "
         result = result + timeslot
     return result
 
@@ -117,7 +115,7 @@ def processTags(tags):
 def getResources():
     key = resource_key()
     resources_query = Resource.query(ancestor=key)
-    resources = resources_query.fetch()
+    resources = resources_query.order(-Resource.lastReservation).fetch()
     #processResources(resources)
     return resources    
 
@@ -306,6 +304,7 @@ class AddResource(webapp2.RequestHandler):
         resource.tags = tokens
         resource.owner = str(users.get_current_user().email());
         resource.reservations = []
+        resource.lastReservation = datetime.datetime.min
         resource.put()
 
 # Redirect to original landing page
