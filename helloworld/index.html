@@ -6,7 +6,7 @@
 </head>
   <body>
     <h3 align="center" >My Reservations:</h3>
-    <table style="width:40%">
+    <table style="width:60%">
       <tr>
         <td>Resource Name</td>
         <td>Start Time</td> 
@@ -16,7 +16,10 @@
       {% if reservations %}
         {% for reservation in reservations %}
           <tr>
-            <td> <a href="/resourceMain?uid={{reservation.uid}}"> {{reservation.resourceName}} </a> </td>
+            <td> 
+              <a href="/resourceMain?uid={{reservation.resourceUid}}">{{reservation.resourceName}}</a> 
+              <a href="/generateRss?uid={{reservation.resourceUid}}"><img src="/images/rss.jpg" height="15" width="35"></a>
+            </td>
             <td>{{reservation.startTime.strftime('%H:%M')}}</td>
             <td>{{reservation.duration}}</td>
             <td> <form action="/deleteReservation" method="get">
@@ -43,7 +46,10 @@
       {% if resources %}
         {% for resource in resources %}
           <tr>
-            <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
+            <td> 
+              <a href="/resourceMain?uid={{resource.uid}}">{{resource.name}}</a>
+              <a href="/generateRss?uid={{resource.uid}}"><img src="/images/rss.jpg" height="15" width="35"></a>
+            </td>
             <td> {{resource.availability | processAvailabilities}} </td>
             <td> 
               {% for tag in resource.tags %} 
@@ -67,7 +73,10 @@
       {% if myResources %}
         {% for resource in myResources %}
           <tr>
-            <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
+            <td> 
+              <a href="/resourceMain?uid={{resource.uid}}">{{resource.name}}</a> 
+              <a href="/generateRss?uid={{resource.uid}}"><img src="/images/rss.jpg" height="15" width="35"></a>
+            </td>
             <td> {{resource.availability | processAvailabilities}} </td>
             <td> 
               {% for tag in resource.tags %} 

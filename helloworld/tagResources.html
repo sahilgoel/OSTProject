@@ -15,7 +15,10 @@
       {% if resources %}
         {% for resource in resources %}
           <tr>
-            <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
+            <td> 
+              <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a>
+              <a href="/generateRss?uid={{resource.uid}}"><img src="/images/rss.jpg" height="15" width="35"></a>
+            </td>
             <td> {{resource.availability | processAvailabilities}} </td>
             <td> 
               {% for tag in resource.tags %} 

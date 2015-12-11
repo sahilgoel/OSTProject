@@ -252,6 +252,52 @@ def addReservationTimeToResource(reservation, resource):
     resource.put()
     reservation.key.delete()
 
+def indent(level):
+    result = ''
+    for i in range(level):
+        result = result + '  '
+    return result
+
+def addHeaders(resource):
+    result = []
+    result.append('<?xml version="1.0" encoding="UTF-8" ?>')
+    result.append('<rss version="2.0">')
+    result.append('')
+    result.append('<Resource>')
+    result.append(indent(1)+'<Name>'+resource.name+'</Name>')
+    result.append(indent(1)+'<Owner>'+resource.owner+'</Owner>')
+    return result
+
+def addFooters(result):
+    result.append('</Resource>')
+    result.append('</rss>')
+    return result
+
+def addTags(resource, result):
+    result.append(indent(1)+'<Tags>')
+    for tag in resource.tags:
+        result.append(indent(2)+'<Tag>'+tag+'</Tag>')
+    result.append(indent(1)+'</Tags>')
+    return result
+
+def addReservations(resource, result):
+    result.append(indent(1)+'<Reservations>')
+    for reservation in resource.reservations:
+        result.append(indent(2)+'<Reservation>')
+        result.append(indent(3)+'<ReservedBy>'+reservation.reservedBy+'</ReservedBy>')
+        result.append(indent(3)+'<StartTime>'+reservation.startTime.strftime('%H:%M')+'</StartTime>')
+        result.append(indent(3)+'<Duration>'+reservation.duration+'</Duration>')
+        result.append(indent(2)+'<Reservation>')
+    result.append(indent(1)+'</Reservations>')    
+    return result
+
+def generateRss(resource):
+    result = addHeaders(resource)
+    result = addTags(resource, result)
+    result = addReservations(resource, result)
+    result = addFooters(result)
+    return result
+
 class MainPage(webapp2.RequestHandler):
     def get(self):
         #enterOneReservation()
@@ -307,7 +353,17 @@ class TagResources(webapp2.RequestHandler):
         }
         template = JINJA_ENVIRONMENT.get_template('tagResources.html')
         self.response.write(template.render(template_values))
-        
+
+class GenerateRss(webapp2.RequestHandler):
+    def get(self):
+        uid = self.request.GET['uid']
+        resource = Resource.query(Resource.uid == uid).get()
+        rssFeed = generateRss(resource)
+        template_values = {
+            'rssFeed': rssFeed,
+        }
+        template = JINJA_ENVIRONMENT.get_template('rssFeed.html')
+        self.response.write(template.render(template_values))        
 
 class AddReservation(webapp2.RequestHandler):
     def get(self):
@@ -604,5 +660,6 @@ app = webapp2.WSGIApplication([
     ('/addReservation', AddReservation),
     ('/userProfile', UserProfile),
     ('/deleteReservation', DeleteReservation),
-    ('/tagResources', TagResources)
+    ('/tagResources', TagResources),
+    ('/generateRss', GenerateRss)
 ], debug=True)

@@ -5,16 +5,11 @@
   <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
 </head>
   <body>
-    {% if resourceName %}
-      <b>
-        {{ resourceName }}
-      </b>
-    {%  else %}
-      <b>
-        {{ resourceName }}
-      </b>
-    {% endif %}
-    <br>
+    <h2 align="center"> RSS Feed </h2>
+      {% for line in rssFeed %}
+        {{line}}
+        <br>
+      {% endfor %}
   </body>
 </html>
 {% endautoescape %}
