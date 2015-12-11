@@ -213,6 +213,7 @@ def addReservationTimeToResource(reservation, resource):
         resource.availability.remove(prevSlot)
         prevSlot.endTime = nextSlot.endTime
         resource.availability.append(prevSlot)
+    resource.reservations = [ s for s in resource.reservations if s.uid != reservation.uid ]
     resource.put()
     reservation.key.delete()
 
@@ -308,7 +309,6 @@ class DeleteReservation(webapp2.RequestHandler):
         reservation = Reservations.query(Reservations.uid == uid).get()
         resource = Resource.query(Resource.uid == resourceUid).get()
         addReservationTimeToResource(reservation, resource)
-
         #reservation.delete()
         self.redirect('/')
 
