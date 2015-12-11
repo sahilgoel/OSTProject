@@ -5,7 +5,8 @@
   <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
 </head>
   <body>
-    <h3 align="center" >Current and Upcoming Reservations for {{resource.name}}:</h3>
+    <h3 align="center" >Current and Upcoming Reservations for 
+        <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> :</h3>
       <table style="width:100%">
         <tr>
           <td> Reserved by </td>
@@ -30,6 +31,7 @@
 
     {% if resource.owner == currentUser %}
     	<form action="/editResource?uid={{resource.uid}}" method="get">
+          <input type="hidden" name="uid" value="{{resource.uid}}">
       		<div><input type="submit" value="Edit Resource"></div>
     	</form>
     {% endif %}

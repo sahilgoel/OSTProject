@@ -67,8 +67,6 @@ def getReservations(userId):
     reservations_query = Reservations.query(ancestor=reservation_key(userId))
     reservations_query = reservations_query.order(Reservations.startTime)    
     reservations = reservations_query.fetch()
-    print reservations
-    print currentTimeObject
     reservations = [ r for r in reservations if r.startTime + datetime.timedelta(minutes = int(r.duration)) >= currentTimeObject ] 
     return reservations
 
@@ -79,6 +77,8 @@ class TimeSlot(ndb.Model):
 class Resource(ndb.Model):
     name = ndb.StringProperty(indexed=False)
     availability = ndb.StructuredProperty(TimeSlot, repeated=True)
+    originalStartTime = ndb.DateTimeProperty(indexed = False)
+    originalEndTime = ndb.DateTimeProperty(indexed = True)
     tags = ndb.StringProperty(indexed=False, repeated = True)
     reservations = ndb.StructuredProperty(Reservations, repeated = True)
     owner = ndb.StringProperty(indexed=True)
@@ -107,10 +107,17 @@ def processAvailabilities(availabilities):
 
 def processTags(tags):
     result = ''
-    flag = 0
     for tag in tags:
         result = result + "/" + tag
     return result[1:]
+
+def printTags(tags):
+    result = ''
+    for i in range(len(tags)):
+        result = result + tags[i]
+        if i != len(tags)-1:
+            result = result + ', '
+    return result
 
 def getResources():
     key = resource_key()
@@ -172,6 +179,24 @@ def checkAndModifyAvailability(resource, startTime, duration):
     if resultSecond.endTime > resultSecond.startTime:
         resource.availability.append(resultSecond)
     resource.put()
+
+def deleteReservationForUid(uid):
+    reservation = Reservations.query(Reservations.uid == uid).get()
+    reservation.key.delete()
+
+def editResource(name, startTime, endTime, tags, resource):
+    resource.lastReservation = datetime.datetime.min
+    resource.availability = [TimeSlot(startTime = startTime, endTime = endTime)]
+    for reservation in resource.reservations:
+        deleteReservationForUid(reservation.uid)
+    resource.reservations = []
+    resource.originalStartTime = startTime
+    resource.originalEndTime = endTime
+    resource.name = name
+    resource.endTime = endTime
+    resource.tags = tags.split(',')
+    resource.put()
+
 
 def addReservation(uid, startTime, duration, resource):
     reservation = Reservations(parent=reservation_key(users.get_current_user().user_id()))
@@ -312,6 +337,63 @@ class DeleteReservation(webapp2.RequestHandler):
         #reservation.delete()
         self.redirect('/')
 
+class EditResource(webapp2.RequestHandler):
+    def get(self):
+        uid = self.request.get('uid')
+        resource = Resource.query(Resource.uid == uid).get()
+        template_values = {
+            'uid': uid,
+            'resource': resource,
+        }
+        JINJA_ENVIRONMENT.filters['printTags'] = printTags
+        template = JINJA_ENVIRONMENT.get_template('editResource.html')
+        self.response.write(template.render(template_values))
+    def post(self):
+        uid = self.request.get('uid')
+        resource = Resource.query(Resource.uid == uid).get()
+        name = self.request.get('resourceName')
+        startTime = self.request.get('startTime')
+        endTime = self.request.get('endTime')
+        tags = self.request.get('tags')
+        errorMsg = None
+        error = False
+        if len(name) == 0:
+            error = True
+            errorMsg = 'Resource name cannot be empty'
+        if errorMsg is None:
+            error = checkTimeFormat(startTime)
+            if error:
+                errorMsg = 'Start time should be in format HH:MM'
+        if errorMsg is None:
+            error = checkLimits(startTime)
+            if error:
+                errorMsg = 'Start time should be in between 00:00 and 23:59'
+        if errorMsg is None:
+            error = checkTimeFormat(endTime)
+            if error:
+                errorMsg = 'End time should be in format HH:MM'
+        if errorMsg is None:
+            error = checkLimits(endTime)
+            if error:
+                errorMsg = 'End time should be in between 00:00 and 23:59'
+        if errorMsg is None:
+            startTimeObject = datetime.datetime.strptime(startTime,'%H:%M')
+            endTimeObject = datetime.datetime.strptime(endTime,'%H:%M')
+            if startTimeObject >= endTimeObject and errorMsg is None:
+                errorMsg = 'End time should be after Start time'
+                error = True
+        if error:
+            template_values = {
+                'error': errorMsg,
+                'resource': resource,
+            }
+            JINJA_ENVIRONMENT.filters['printTags'] = printTags
+            template = JINJA_ENVIRONMENT.get_template('editResource.html')
+            self.response.write(template.render(template_values))
+        # Change the resource
+        editResource(name, startTimeObject, endTimeObject, tags, resource)
+        self.redirect('/')
+
 
 class ResourceMain(webapp2.RequestHandler):
     def get(self):
@@ -322,6 +404,7 @@ class ResourceMain(webapp2.RequestHandler):
             r.startTime + datetime.timedelta(minutes = int(r.duration)) >= currentTimeObject ]
         resource.reservations.sort(timeCompare)
         currentUser = str(users.get_current_user().email())
+        print resource.uid
         template_values = {
             'resource':resource,
             'currentUser':currentUser,
@@ -460,6 +543,8 @@ class AddResource(webapp2.RequestHandler):
         t_startTime = datetime.datetime.strptime(startTime, '%H:%M')
         t_endTime = datetime.datetime.strptime(endTime, '%H:%M')
         resource.availability = [TimeSlot(startTime = t_startTime, endTime = t_endTime)]
+        resource.originalStartTime = t_startTime
+        resource.originalEndTime = t_endTime
         resource.tags = tokens
         resource.owner = str(users.get_current_user().email());
         resource.reservations = []
@@ -475,6 +560,7 @@ JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/addResource', AddResource),
+    ('/editResource', EditResource),
     ('/resourceMain', ResourceMain),
     ('/addReservation', AddReservation),
     ('/deleteReservation', DeleteReservation)

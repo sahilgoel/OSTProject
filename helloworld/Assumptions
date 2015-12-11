@@ -1,0 +1,1 @@
+1. According to 5th requirement, owner can edit his/her resource. If owner edits a resource which already had reservations, it will delete those reservations.

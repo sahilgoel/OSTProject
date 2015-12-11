@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+<head>
+  <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+</head>
+  <body>
+    <h2 align="center"> Edit a resource </h2>
+    <form action="/editResource" method="post">
+      {% if error %}
+        <error>
+          {{ error }}
+          <br>
+          <br>
+        </error>
+      {% endif %}
+      <p>
+        <label for="resourceName">Resource Name</label>
+        <input type="text" required name="resourceName" value="{{ resource.name }}" />
+      </p>
+      <p>
+        <label for="startTime">Start Time(HH:MM) </label>
+        <input type="text" required name="startTime" value = "{{ resource.originalStartTime.strftime('%H:%M') }}" />
+      </p>
+      <p>
+        <label for="endTime">End Time(HH:MM) </label>
+        <input type="text" required name="endTime" value = "{{ resource.originalEndTime.strftime('%H:%M') }}" />
+      </p>
+      <p>
+        <label for="tags">Tags </label>
+        <input type="text" required name="tags" placeholder="abc, xyz" value = "{{ resource.tags | printTags }}" />
+      </p>
+      <p>
+        <input type="hidden" name="uid" value="{{ resource.uid }}">
+      </p>
+      <input type="submit">
+    </form>
+  </body>
+</html>
+{% endautoescape %}
