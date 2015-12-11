@@ -271,6 +271,23 @@ class MainPage(webapp2.RequestHandler):
             template = JINJA_ENVIRONMENT.get_template('index.html')
             self.response.write(template.render(template_values))
 
+class UserProfile(webapp2.RequestHandler):
+    def get(self):
+        email = self.request.GET['email']
+        reservations = getReservations(email)
+        resources = getResources()
+        myResources =  [ r for r in resources if r.owner == email ]
+        template_values = {
+            'email': email,
+            'reservations': reservations,
+            'resources': myResources,
+        }
+        JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
+        JINJA_ENVIRONMENT.filters['processTags'] = processTags
+        template = JINJA_ENVIRONMENT.get_template('userProfile.html')
+        self.response.write(template.render(template_values))
+        
+
 class AddReservation(webapp2.RequestHandler):
     def get(self):
         resourceUid = self.request.GET['uid']
@@ -564,5 +581,6 @@ app = webapp2.WSGIApplication([
     ('/editResource', EditResource),
     ('/resourceMain', ResourceMain),
     ('/addReservation', AddReservation),
+    ('/userProfile', UserProfile),
     ('/deleteReservation', DeleteReservation)
 ], debug=True)
