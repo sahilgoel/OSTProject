@@ -494,6 +494,7 @@ class ResourceMain(webapp2.RequestHandler):
     def get(self):
         resourceUid = self.request.GET['uid']
         resource = getResourceFromUid(resourceUid)
+        numberTimes = len(resource.reservations)
         currentTimeObject = getCurrentTimeObject()
         resource.reservations = [ r for r in resource.reservations if 
             r.startTime + datetime.timedelta(minutes = int(r.duration)) >= currentTimeObject ]
@@ -503,6 +504,7 @@ class ResourceMain(webapp2.RequestHandler):
         template_values = {
             'resource':resource,
             'currentUser':currentUser,
+            'numberTimes':numberTimes,
         }
         template = JINJA_ENVIRONMENT.get_template('resourceMain.html')
         self.response.write(template.render(template_values))
