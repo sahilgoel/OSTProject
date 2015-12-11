@@ -31,8 +31,10 @@
             <td> <a href="/resourceMain?uid={{reservation.uid}}"> {{reservation.resourceName}} </a> </td>
             <td>{{reservation.startTime.strftime('%H:%M')}}</td>
             <td>{{reservation.duration}}</td>
-            <td> <form action="/deleteReservation" method="get"> 
-                     <input type="submit" value="Delete this reservation"> 
+            <td> <form action="/deleteReservation" method="get">
+                    <input type="hidden" name="resourceUid" value="{{reservation.resourceUid}}"> 
+                    <input type="hidden" name="uid" value="{{reservation.uid}}">
+                    <input type="submit" value="Delete this reservation"> 
                  </form>
             </td>
           </tr>

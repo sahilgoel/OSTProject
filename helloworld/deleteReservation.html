@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+<head>
+  <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+</head>
+  <body>
+    <h2 align="center"> Delete this reservation </h2>
+    <p>
+      Resource Name: {{reservation.resourceName}}
+    </p>
+    <p>
+      Start Time: {{reservation.startTime}}
+    </p>
+    <p>
+      Duration: {{reservation.duration}} Minutes
+    </p>
+    <br>
+    <br>
+    <p>
+      Are you sure, you want to delete this reservation? 
+    </p>
+    <p>
+      <form action="/deleteReservation" method="post">
+        <input type="hidden" name="resourceUid" value="{{reservation.resourceUid}}"> 
+        <input type="hidden" name="uid" value="{{reservation.uid}}">
+        <input type="submit" value="Yes"> 
+      </form>
+    </p>
+  </body>
+</html>
+{% endautoescape %}

@@ -2,6 +2,7 @@ import os
 import urllib
 from google.appengine.api import users
 from google.appengine.ext import ndb
+from google.appengine.ext import db
 #from google.appengine.api import datastore
 import jinja2
 import webapp2
@@ -22,9 +23,11 @@ SEPARATOR = '_'
 
 
 def resource_key():
-    day = datetime.datetime.now().day;
-    month = datetime.datetime.now().month;
-    year = datetime.datetime.now().year;
+    currentTime = datetime.datetime.now()
+    actualTime = currentTime - datetime.timedelta(hours = 5)
+    day = actualTime.day;
+    month = actualTime.month;
+    year = actualTime.year;
     return ndb.Key('Resource', str(day)+SEPARATOR+str(month)+SEPARATOR+str(year))
 
 def reservation_key(user_id):
@@ -164,8 +167,10 @@ def checkAndModifyAvailability(resource, startTime, duration):
     resultSecond = copy.deepcopy(resultFirst)
     resultFirst.endTime = startTime - datetime.timedelta(minutes = 1)
     resultSecond.startTime = endTime
-    resource.availability.append(resultFirst)
-    resource.availability.append(resultSecond)
+    if resultFirst.startTime < resultFirst.endTime:
+        resource.availability.append(resultFirst)
+    if resultSecond.endTime > resultSecond.startTime:
+        resource.availability.append(resultSecond)
     resource.put()
 
 def addReservation(uid, startTime, duration, resource):
@@ -181,6 +186,35 @@ def addReservation(uid, startTime, duration, resource):
     resource.lastReservation = datetime.datetime.now()
     resource.put()
 
+def addReservationTimeToResource(reservation, resource):
+    startTime = reservation.startTime 
+    endTime = reservation.startTime + datetime.timedelta(minutes = int(reservation.duration))
+    prevSlot = None
+    nextSlot = None
+    for slot in resource.availability:
+        if slot.endTime == startTime - datetime.timedelta(minutes = 1):
+            prevSlot = slot
+        if slot.endTime == startTime:
+            prevSlot = slot
+        if slot.startTime == endTime:
+            nextSlot = slot
+    if prevSlot is None and nextSlot is None:
+        resource.availability.append(TimeSlot(startTime = startTime, endTime = endTime))
+    elif nextSlot is None:
+        resource.availability.remove(prevSlot)
+        prevSlot.endTime = endTime
+        resource.availability.append(prevSlot)
+    elif prevSlot is None:
+        resource.availability.remove(nextSlot)
+        nextSlot.startTime = startTime
+        resource.availability.append(nextSlot)
+    else:
+        resource.availability.remove(nextSlot)
+        resource.availability.remove(prevSlot)
+        prevSlot.endTime = nextSlot.endTime
+        resource.availability.append(prevSlot)
+    resource.put()
+    reservation.key.delete()
 
 class MainPage(webapp2.RequestHandler):
     def get(self):
@@ -256,6 +290,27 @@ class AddReservation(webapp2.RequestHandler):
         addReservation(uid, startTime, duration, resource)
         self.redirect('/')
 
+class DeleteReservation(webapp2.RequestHandler):
+    def get(self):
+        uid = self.request.get('uid')
+        resourceUid = self.request.get('resourceUid')
+        reservation = Reservations.query(Reservations.uid == uid).get()
+        template_values = { 
+            'uid': uid,
+            'reservation': reservation,
+            'resourceUid': resourceUid,
+        }
+        template = JINJA_ENVIRONMENT.get_template('deleteReservation.html')
+        self.response.write(template.render(template_values))
+    def post(self):
+        uid = self.request.get('uid')
+        resourceUid = self.request.get('resourceUid')
+        reservation = Reservations.query(Reservations.uid == uid).get()
+        resource = Resource.query(Resource.uid == resourceUid).get()
+        addReservationTimeToResource(reservation, resource)
+
+        #reservation.delete()
+        self.redirect('/')
 
 
 class ResourceMain(webapp2.RequestHandler):
@@ -265,6 +320,7 @@ class ResourceMain(webapp2.RequestHandler):
         currentTimeObject = getCurrentTimeObject()
         resource.reservations = [ r for r in resource.reservations if 
             r.startTime + datetime.timedelta(minutes = int(r.duration)) >= currentTimeObject ]
+        resource.reservations.sort(timeCompare)
         currentUser = str(users.get_current_user().email())
         template_values = {
             'resource':resource,
@@ -420,5 +476,6 @@ app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/addResource', AddResource),
     ('/resourceMain', ResourceMain),
-    ('/addReservation', AddReservation)
+    ('/addReservation', AddReservation),
+    ('/deleteReservation', DeleteReservation)
 ], debug=True)
