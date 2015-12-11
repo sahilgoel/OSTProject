@@ -1,1 +1,2 @@
-1. According to 5th requirement, owner can edit his/her resource. If owner edits a resource which already had reservations, it will delete those reservations.
+1. Since the requirements mentioned that we don't need to take care of cases where if a user tries to reserve a resource which finishes after the day finishes, those cases are not handled explicitly. They may result in an error if user tries to do so.
+2. According to 5th requirement, owner can edit his/her resource. If owner edits a resource which already had reservations, it will delete those reservations.
