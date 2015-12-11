@@ -45,7 +45,11 @@
           <tr>
             <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
             <td> {{resource.availability | processAvailabilities}} </td>
-            <td> {{resource.tags | processTags }} </td>
+            <td> 
+              {% for tag in resource.tags %} 
+                <a href="/tagResources?tag={{tag}}">{{ tag }}</a>
+              {% endfor %}
+            </td>
           </tr>
         {% endfor %}
       {% endif %}
@@ -65,7 +69,11 @@
           <tr>
             <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
             <td> {{resource.availability | processAvailabilities}} </td>
-            <td> {{resource.tags | processTags }} </td>
+            <td> 
+              {% for tag in resource.tags %} 
+                <a href="/tagResources?tag={{tag}}">{{ tag }}</a>
+              {% endfor %}
+            </td>
           </tr>
         {% endfor %}
       {% endif %}

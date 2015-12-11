@@ -5,28 +5,7 @@
   <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
 </head>
   <body>
-    <h3 align="center" > Reservations made by {{email}}:</h3>
-    <table style="width:40%">
-      <tr>
-        <td>Resource Name</td>
-        <td>Start Time</td> 
-        <td>Duration</td>
-      </tr>
-      {% if reservations %}
-        {% for reservation in reservations %}
-          <tr>
-            <td> <a href="/resourceMain?uid={{reservation.resourceUid}}"> {{reservation.resourceName}} </a> </td>
-            <td>{{reservation.startTime.strftime('%H:%M')}}</td>
-            <td>{{reservation.duration}}</td>
-          </tr>
-
-        {% endfor %}
-      {% endif %}
-    </table>
-    
-    <hr>
-
-    <h3 align="center" >Resources owned by {{email}}:</h3>
+    <h3 align="center" >All resources with tag  {{tag}}:</h3>
     <table style="width:100%">
       <tr>
         <td> Resource Name </td>
@@ -38,7 +17,7 @@
           <tr>
             <td> <a href="/resourceMain?uid={{resource.uid}}"> {{resource.name}} </a> </td>
             <td> {{resource.availability | processAvailabilities}} </td>
-            <td>
+            <td> 
               {% for tag in resource.tags %} 
                 <a href="/tagResources?tag={{tag}}">{{ tag }}</a>
               {% endfor %}
@@ -47,7 +26,6 @@
         {% endfor %}
       {% endif %}
     </table>
-
   </body>
 </html>
 {% endautoescape %}

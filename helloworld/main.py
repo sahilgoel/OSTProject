@@ -179,6 +179,15 @@ def checkAndModifyAvailability(resource, startTime, duration):
         resource.availability.append(resultSecond)
     resource.put()
 
+def getResourcesFromTag(resources, tag):
+    filteredResources = []
+    tag = tag.strip().lower()
+    for resource in resources:
+        tags = resource.tags
+        if tag in (rTag.lower().strip() for rTag in tags):
+            filteredResources.append(resource)
+    return filteredResources    
+
 def deleteReservationForUid(uid):
     reservation = Reservations.query(Reservations.uid == uid).get()
     reservation.key.delete()
@@ -285,6 +294,18 @@ class UserProfile(webapp2.RequestHandler):
         JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
         JINJA_ENVIRONMENT.filters['processTags'] = processTags
         template = JINJA_ENVIRONMENT.get_template('userProfile.html')
+        self.response.write(template.render(template_values))
+
+class TagResources(webapp2.RequestHandler):
+    def get(self):
+        tag = self.request.GET['tag']
+        resources = getResources()
+        resources = getResourcesFromTag(resources, tag)
+        template_values = {
+            'tag': tag,
+            'resources': resources,
+        }
+        template = JINJA_ENVIRONMENT.get_template('tagResources.html')
         self.response.write(template.render(template_values))
         
 
@@ -582,5 +603,6 @@ app = webapp2.WSGIApplication([
     ('/resourceMain', ResourceMain),
     ('/addReservation', AddReservation),
     ('/userProfile', UserProfile),
-    ('/deleteReservation', DeleteReservation)
+    ('/deleteReservation', DeleteReservation),
+    ('/tagResources', TagResources)
 ], debug=True)
