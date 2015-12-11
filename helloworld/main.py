@@ -21,7 +21,6 @@ DEFAULT_GUESTBOOK_NAME = 'default_guestbook'
 
 SEPARATOR = '_'
 
-
 def resource_key():
     currentTime = datetime.datetime.now()
     actualTime = currentTime - datetime.timedelta(hours = 5)
@@ -30,7 +29,7 @@ def resource_key():
     year = actualTime.year;
     return ndb.Key('Resource', str(day)+SEPARATOR+str(month)+SEPARATOR+str(year))
 
-def reservation_key(user_id):
+def reservation_key(email):
     currentTime = datetime.datetime.now()
         # To convert in EST/EDT
     delta = datetime.timedelta(hours = 5)
@@ -39,7 +38,7 @@ def reservation_key(user_id):
     month = str(currentTime.month)
     year = str(currentTime.year)
     date = day+SEPARATOR+month+SEPARATOR+year
-    return ndb.Key('Reservation', user_id+SEPARATOR+date)
+    return ndb.Key('Reservation', email+SEPARATOR+date)
 
 
 class Reservations(ndb.Model):
@@ -62,9 +61,9 @@ def getCurrentTimeObject():
     currentTimeObject = datetime.datetime.strptime(currenTimeString,'%H:%M')
     return currentTimeObject
 
-def getReservations(userId):
+def getReservations(email):
     currentTimeObject = getCurrentTimeObject()
-    reservations_query = Reservations.query(ancestor=reservation_key(userId))
+    reservations_query = Reservations.query(ancestor=reservation_key(email))
     reservations_query = reservations_query.order(Reservations.startTime)    
     reservations = reservations_query.fetch()
     reservations = [ r for r in reservations if r.startTime + datetime.timedelta(minutes = int(r.duration)) >= currentTimeObject ] 
@@ -194,12 +193,14 @@ def editResource(name, startTime, endTime, tags, resource):
     resource.originalEndTime = endTime
     resource.name = name
     resource.endTime = endTime
-    resource.tags = tags.split(',')
+    tokens = tags.split(',')
+    tokens = [ s.strip() for s in tokens ]
+    resource.tags = tokens
     resource.put()
 
 
 def addReservation(uid, startTime, duration, resource):
-    reservation = Reservations(parent=reservation_key(users.get_current_user().user_id()))
+    reservation = Reservations(parent=reservation_key(users.get_current_user().email()))
     reservation.reservedBy = str(users.get_current_user().email())
     reservation.startTime = datetime.datetime.strptime(startTime,'%H:%M')
     reservation.duration = duration
@@ -252,7 +253,7 @@ class MainPage(webapp2.RequestHandler):
         if user is None:
             self.redirect(users.create_login_url(self.request.uri))
         else:
-            reservations = getReservations(user.user_id())
+            reservations = getReservations(user.email())
             resources = getResources()
             myResources = getMyResources(resources)
 
