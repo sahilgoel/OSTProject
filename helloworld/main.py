@@ -208,13 +208,14 @@ def editResource(name, startTime, endTime, tags, resource):
     resource.tags = tokens
     resource.put()
 
+
 def sendMail(resource, reservation):
     mail.send_mail(sender="sahilnsit10@gmail.com",
                     to=reservation.reservedBy,
                     subject="Your reservation is confirmed",
                     body = """
                     Hi
-                    Your reservation for """ + reservation.resourceName + "is confirmed")
+                    Your reservation for """ + reservation.resourceName + " is confirmed. Thank you for GAE  reservation system. ")
 
 def addReservation(uid, startTime, duration, resource):
     reservation = Reservations(parent=reservation_key(users.get_current_user().email()))
