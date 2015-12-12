@@ -3,6 +3,7 @@ import urllib
 from google.appengine.api import users
 from google.appengine.ext import ndb
 from google.appengine.ext import db
+from google.appengine.api import mail
 #from google.appengine.api import datastore
 import jinja2
 import webapp2
@@ -207,6 +208,13 @@ def editResource(name, startTime, endTime, tags, resource):
     resource.tags = tokens
     resource.put()
 
+def sendMail(resource, reservation):
+    mail.send_mail(sender="reservationsystem@helloworld.appspotmail.com",
+                    to=reservation.reservedBy,
+                    subject="Your reservation is confirmed",
+                    body = """
+                    Hi
+                    Your reservation for """ + reservation.resourceName + "is confirmed")
 
 def addReservation(uid, startTime, duration, resource):
     reservation = Reservations(parent=reservation_key(users.get_current_user().email()))
@@ -220,6 +228,7 @@ def addReservation(uid, startTime, duration, resource):
     resource.reservations.append(reservation)
     resource.lastReservation = datetime.datetime.now()
     resource.put()
+    sendMail(resource, reservation)
 
 def addReservationTimeToResource(reservation, resource):
     startTime = reservation.startTime 
