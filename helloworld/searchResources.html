@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+<head>
+  <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+</head>
+  <body>
+    <h3 align="center" >Resources that matched your search key:</h3>
+    <table style="width:100%">
+      <tr>
+        <td> Resource Name </td>
+        <td> Availabilities </td>
+        <td> Tags </td>
+      </tr> 
+      {% if resources %}
+        {% for resource in resources %}
+          <tr>
+            <td> 
+              <a href="/resourceMain?uid={{resource.uid}}">{{resource.name}}</a>
+              <a href="/generateRss?uid={{resource.uid}}"><img src="/images/rss.jpg" height="15" width="35"></a>
+            </td>
+            <td> {{resource.availability | processAvailabilities}} </td>
+            <td> 
+              {% for tag in resource.tags %} 
+                <a href="/tagResources?tag={{tag}}">{{ tag }}</a>
+              {% endfor %}
+            </td>
+          </tr>
+        {% endfor %}
+      {% endif %}
+    </table>
+  </body>
+</html>
+{% endautoescape %}

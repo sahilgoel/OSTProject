@@ -508,6 +508,19 @@ class ResourceMain(webapp2.RequestHandler):
         }
         template = JINJA_ENVIRONMENT.get_template('resourceMain.html')
         self.response.write(template.render(template_values))
+
+class SearchResource(webapp2.RequestHandler):
+    def post(self):
+        key = self.request.get('searchKey')
+        resources = getResources()
+        resources = [ r for r in resources if key.lower() in r.name.lower() ]
+        template_values = {
+          'resources': resources,
+        }
+        JINJA_ENVIRONMENT.filters['processAvailabilities'] = processAvailabilities
+        JINJA_ENVIRONMENT.filters['processTags'] = processTags
+        template = JINJA_ENVIRONMENT.get_template('searchResources.html')
+        self.response.write(template.render(template_values))        
         
 
 class AddResource(webapp2.RequestHandler):
@@ -663,5 +676,6 @@ app = webapp2.WSGIApplication([
     ('/userProfile', UserProfile),
     ('/deleteReservation', DeleteReservation),
     ('/tagResources', TagResources),
-    ('/generateRss', GenerateRss)
+    ('/generateRss', GenerateRss),
+    ('/searchResource', SearchResource)
 ], debug=True)

@@ -90,9 +90,20 @@
 
 
     <hr>
+
     <form action="/addResource" method="get">
-      <h3 align="center"><div align="center"><input type="submit" value="Add a Resource"></div></h3>
+      <div align="center"><input type="submit" value="Add a Resource"></div>
     </form>
+
+    <hr>
+    
+      <form action="/searchResource" method="post">
+        <p>
+          <input type="text" required name="searchKey" placeholder="Resource Name" />
+        </p>
+        <p>
+          <input type="submit" value="Search">
+      </form>
     
     <hr>
 

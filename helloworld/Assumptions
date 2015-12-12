@@ -1,5 +1,7 @@
 1. I am assuming when a user adds a resource and give start time and end time, it is for today i.e. the resource will be available today from start time to end time
 2. Since the requirements mentioned that we don't need to take care of cases where if a user tries to reserve a resource which finishes after the day finishes, those cases are not handled explicitly. They may result in an error if user tries to do so.
 3. According to 5th requirement, owner can edit his/her resource. If owner edits a resource which already had reservations, it will delete those reservations.
-4. I named another branch as Requirement-11 instead of Experiment.
-5. Extra credit 1 -> On the resource page, I am showing the number of times this resource has been reserved including current and upcoming reservations.
+4. In rss dump, I have included the all the reservations including the past ones, since it makes sense to dump all the information for later use.
+5. I named another branch as Requirement-11 instead of Experiment.
+6. Extra credit 1 -> On the resource page, I am showing the number of times this resource has been reserved including current and upcoming reservations.
+7. Extra credit 2 -> On main landing page, I have included a section to search for a resource by a key. If search key is "R" then all the resources whose names contain "R" will be displayed.
