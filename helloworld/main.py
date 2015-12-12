@@ -209,7 +209,7 @@ def editResource(name, startTime, endTime, tags, resource):
     resource.put()
 
 def sendMail(resource, reservation):
-    mail.send_mail(sender="reservationsystem@reservaionsystem.appspotmail.com",
+    mail.send_mail(sender="sahilnsit10@gmail.com",
                     to=reservation.reservedBy,
                     subject="Your reservation is confirmed",
                     body = """
